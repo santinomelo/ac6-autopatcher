@@ -1,30 +1,36 @@
-# Parcheador Automático AC6
+# 🛡️ Parcheador Automático AC6
 
-Parcheador Automático AC6 es una capa de seguridad del lado del servidor para experiencias de Roblox que utilizan remotos de sonido vulnerables de A-Chassis 6.
+![Roblox](https://img.shields.io/badge/Roblox-Studio-00A2FF?logo=robloxstudio&logoColor=white)
+![Luau](https://img.shields.io/badge/Luau-servidor-335FFF)
+![Licencia](https://img.shields.io/badge/licencia-MIT-green)
 
-El proyecto nació después de identificar que algunas instalaciones de AC6 confían en identificadores de sonido, destinos, nombres, volumen y velocidad enviados por el cliente. Un atacante puede abusar de ese comportamiento para crear y reproducir sonidos arbitrarios mediante el servidor.
+Un parche del lado del servidor para juegos de Roblox que usan versiones vulnerables del sistema de sonido de **A-Chassis 6**.
 
-El parcheador reemplaza los remotos inseguros reconocidos por una implementación controlada por el servidor, conservando el protocolo de sonido tradicional de AC6.
+La vulnerabilidad aparece porque algunas instalaciones de AC6 confían en datos que manda el cliente, como el ID del audio, dónde crearlo, el nombre, el volumen o la velocidad. Con eso, un atacante puede pedirle al servidor que cree y reproduzca sonidos arbitrarios.
 
-## Modelo de seguridad
+Este script reemplaza los remotos vulnerables por una versión controlada por el servidor, sin cambiar el protocolo de sonido clásico de AC6.
 
-- Considera que todos los argumentos enviados por el cliente son manipulables.
-- Acepta solicitudes únicamente del ocupante actual del `VehicleSeat`.
-- Utiliza identificadores y plantillas de sonido seleccionados por el servidor.
-- Nunca acepta del cliente la instancia donde se creará un sonido.
-- Limita el volumen y la velocidad de reproducción.
-- Limita la cantidad de solicitudes por jugador.
-- Aísla los errores para impedir que un chasis malformado detenga el monitor global.
-- Reemplaza los remotos vulnerables de forma inmediata cuando se insertan vehículos.
-- Revisa nuevamente los chasis incompletos hasta que aparezcan sus dependencias.
+> [!IMPORTANT]
+> Ponelo como `Script` dentro de `ServerScriptService`. Con una sola copia alcanza.
 
-## Código utilizado para explotar la vulnerabilidad
+## 🔒 ¿Qué protege?
 
-El código original fue publicado en:
+- Trata todo lo que manda el cliente como información manipulable.
+- Solo acepta pedidos del jugador que está manejando el vehículo.
+- Usa IDs y plantillas de sonido elegidos por el servidor.
+- No deja que el cliente elija dónde crear el sonido.
+- Limita el volumen, la velocidad y la cantidad de pedidos.
+- Si un chasis está mal armado, el error queda aislado y el parcheador sigue funcionando.
+- Detecta vehículos agregados después de arrancar el servidor.
+- Vuelve a revisar chasis incompletos cuando aparecen las piezas que faltaban.
+
+## 💥 Código usado para explotar la vulnerabilidad
+
+El código original está acá:
 
 https://pastebin.com/5FUE10fZ
 
-La siguiente es una reproducción neutralizada del payload observado. Se utiliza un nombre inocuo, un identificador vacío y volumen cero para documentar el flujo sin reproducir contenido inapropiado:
+Este es un ejemplo neutralizado del payload. Usa un nombre tranquilo, un ID vacío y volumen cero para mostrar cómo funciona sin reproducir contenido inapropiado:
 
 ```lua
 local espacio = game:GetService("Workspace")
@@ -49,11 +55,11 @@ for _, objeto in pairs(espacio:GetChildren()) do
 end
 ```
 
-La vulnerabilidad no depende del nombre del sonido. El problema es que el manejador original confía en el destino, el identificador y otras propiedades suministradas por el cliente.
+El nombre del sonido no es la vulnerabilidad. El problema real es que el handler original confía en el destino, el ID y otras propiedades que manda el cliente.
 
-## Protocolo compatible
+## 🚗 Compatibilidad
 
-El parcheador reconoce remotos llamados `AC6_FE_Sounds` y mantiene las acciones tradicionales:
+El parcheador reconoce remotos llamados `AC6_FE_Sounds` y mantiene estas acciones:
 
 - `newSound`
 - `updateSound`
@@ -62,89 +68,67 @@ El parcheador reconoce remotos llamados `AC6_FE_Sounds` y mantiene las acciones 
 - `stopSound`
 - `removeSound`
 
-Los nombres de acciones y remotos se comparan sin distinguir mayúsculas de minúsculas. Un nombre de sonido arbitrario se rechaza si no existe una plantilla `Sound` correspondiente y controlada por el servidor.
+Funciona con variantes de AC6 que tengan ese `RemoteEvent` y plantillas `Sound` controladas por el servidor.
 
-## Instalación
+Si tu chasis usa otro nombre de remoto, otro asiento, otro protocolo o guarda los IDs solamente dentro de módulos personalizados, probablemente tengas que ajustar la tabla `configuracion`.
 
-1. Crea un `Script` dentro de `ServerScriptService`.
-2. Nómbralo `ParcheadorAutomaticoAC6`.
-3. Copia el contenido de `ParcheadorAutomaticoAC6.server.lua` dentro del script.
-4. Conserva una sola copia del parcheador en la experiencia.
-5. Prueba todos los vehículos en un servidor local antes de publicar la experiencia.
+> [!NOTE]
+> Los nombres técnicos como `RemoteEvent`, `VehicleSeat`, `Sound` y `AC6_FE_Sounds` quedan en inglés porque son parte de Roblox o de AC6. Si se traducen, el sistema deja de reconocerlos.
 
-No es necesario reemplazar individualmente el manejador de cada vehículo cuando el remoto AC6 es reconocido.
+## ⚙️ Instalación
 
-## Estados durante la ejecución
+1. Creá un `Script` dentro de `ServerScriptService`.
+2. Ponele `ParcheadorAutomaticoAC6`.
+3. Copiá adentro el contenido de `ParcheadorAutomaticoAC6.server.lua`.
+4. Asegurate de tener una sola copia.
+5. Probá los vehículos en un servidor local antes de publicar el juego.
 
-Cada remoto reemplazado recibe estos atributos:
+No hace falta reemplazar a mano el handler de cada vehículo si el remoto AC6 es reconocido.
+
+## 📡 ¿Qué muestra en la consola?
+
+Cada remoto parcheado recibe estos atributos:
 
 - `ac6_version_parche`
 - `ac6_estado_parche`
 - `ac6_motivo_parche`
 
-Los estados posibles incluyen:
+Estados posibles:
 
-- `seguro_listo`: el chasis está protegido y sus dependencias de audio están disponibles.
-- `seguro_degradado`: el chasis está protegido y utiliza temporalmente el asiento del conductor como emisor.
-- `seguro_esperando`: el chasis está protegido, pero espera un asiento, una plantilla o un emisor compatible.
+- `seguro_listo`: el chasis quedó protegido y el audio está disponible.
+- `seguro_degradado`: está protegido, pero usa temporalmente el asiento como emisor.
+- `seguro_esperando`: está protegido y espera un asiento, una plantilla o un emisor compatible.
 
-Si el escaneo inicial no encuentra un remoto vulnerable reconocido, el servidor imprime:
+Si el primer escaneo no encuentra nada vulnerable, aparece:
 
 ```text
 Parcheador AC6 no encontro vulnerabilidades en el escaneo inicial
 ```
 
-El monitor continúa activo después de ese mensaje y procesa los vehículos insertados dinámicamente.
+Eso no significa que el script se apagó. Sigue atento y revisa los vehículos que aparezcan después.
 
-## Configuración
+## 🧩 Casos raros
 
-La tabla `configuracion`, ubicada al comienzo del script, controla:
+Si encuentra un remoto vulnerable pero al chasis le falta algo, primero neutraliza el remoto inseguro. Después espera y vuelve a intentar cuando aparecen las dependencias.
 
-- Los servicios supervisados.
-- Los nombres de remotos aceptados.
-- Los nombres de asientos del conductor aceptados.
-- Los nombres preferidos para emisores de sonido.
-- Los límites de solicitudes.
-- El intervalo de reintento de dependencias.
-- Los límites de volumen y velocidad.
-- El uso del asiento como emisor de respaldo.
+En ese caso, el vehículo queda protegido, aunque el audio del motor puede no funcionar hasta que estén disponibles el asiento, la plantilla o el emisor que faltaba.
 
-La configuración predeterminada supervisa `Workspace`, `ReplicatedStorage`, `ServerStorage`, `StarterPack` y `Players`.
+Los permisos de los audios son otro tema: el parcheador no puede darle al juego acceso a un recurso que Roblox no le permite usar.
 
-Puedes retirar los servicios que nunca contengan vehículos en tu experiencia para reducir el alcance del monitoreo.
+## ✅ Qué se verificó
 
-## Compatibilidad
-
-El proyecto está dirigido a variantes AC6 que exponen un `RemoteEvent` llamado `AC6_FE_Sounds` y contienen plantillas de sonido controladas por el servidor.
-
-Un chasis personalizado puede requerir cambios en la configuración cuando utiliza:
-
-- Otro nombre para el remoto.
-- Otro nombre para el asiento del conductor.
-- Un protocolo de argumentos completamente diferente.
-- Identificadores almacenados únicamente dentro de módulos personalizados.
-- Un sistema vehicular distinto de AC6.
-
-Cuando faltan dependencias, el parcheador falla de forma cerrada: neutraliza el remoto vulnerable, pero el audio del motor puede permanecer inactivo hasta que aparezcan los objetos requeridos.
-
-La propiedad y los permisos de los audios son independientes de esta vulnerabilidad. El parcheador no puede conceder a una experiencia permiso para utilizar un recurso de audio.
-
-## Validación
-
-La fuente fue verificada sintácticamente en Luau y sometida a pruebas simuladas que abarcaron:
-
-- El payload de creación arbitraria de sonidos.
-- Jugadores no autorizados.
-- Identificadores y destinos controlados por el cliente.
+- Sintaxis válida de Luau.
+- Payload de creación arbitraria de sonidos.
+- Pedidos de jugadores que no están manejando.
+- IDs y destinos controlados por el cliente.
 - Volumen excesivo.
-- Inserción dinámica de vehículos.
-- Chasis incompletos.
-- Dependencias tardías.
+- Vehículos agregados durante la partida.
+- Chasis incompletos y dependencias que aparecen más tarde.
 - Plantillas no clonables.
 - Vehículos clonados desde almacenamiento compartido.
 
-Realiza siempre una prueba de servidor local en Roblox Studio con los modelos exactos utilizados por la experiencia de destino.
+Igual, antes de publicarlo, hacé una prueba en Roblox Studio con los modelos exactos de tu juego. Cada versión modificada de A-Chassis puede venir armada distinto.
 
-## Licencia
+## 📄 Licencia
 
-Este proyecto se distribuye bajo la licencia MIT.
+Este proyecto usa la [licencia MIT](LICENSE).
