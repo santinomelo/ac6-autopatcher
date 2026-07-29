@@ -1,26 +1,59 @@
-# AC6 AutoPatcher
+# Parcheador Automático AC6
 
-AC6 AutoPatcher is a server-side security layer for Roblox experiences that use vulnerable A-Chassis 6 sound remotes.
+Parcheador Automático AC6 es una capa de seguridad del lado del servidor para experiencias de Roblox que utilizan remotos de sonido vulnerables de A-Chassis 6.
 
-The project was created after identifying that some AC6 installations trust client-controlled sound identifiers, parents, names, volume values, and playback settings. An attacker can abuse that behavior to create and reproduce arbitrary sounds through the server.
+El proyecto nació después de identificar que algunas instalaciones de AC6 confían en identificadores de sonido, destinos, nombres, volumen y velocidad enviados por el cliente. Un atacante puede abusar de ese comportamiento para crear y reproducir sonidos arbitrarios mediante el servidor.
 
-AC6 AutoPatcher replaces recognized insecure remotes with a server-authoritative implementation while preserving the standard AC6 sound protocol.
+El parcheador reemplaza los remotos inseguros reconocidos por una implementación controlada por el servidor, conservando el protocolo de sonido tradicional de AC6.
 
-## Security model
+## Modelo de seguridad
 
-- Treats every client argument as untrusted.
-- Accepts requests only from the current `VehicleSeat` occupant.
-- Uses sound identifiers and templates selected by the server.
-- Never accepts a destination instance from the client.
-- Restricts volume and playback speed.
-- Rate-limits requests per player.
-- Isolates failures so one malformed chassis cannot stop the global monitor.
-- Replaces vulnerable remotes synchronously when vehicles are inserted.
-- Rechecks incomplete chassis until their dependencies become available.
+- Considera que todos los argumentos enviados por el cliente son manipulables.
+- Acepta solicitudes únicamente del ocupante actual del `VehicleSeat`.
+- Utiliza identificadores y plantillas de sonido seleccionados por el servidor.
+- Nunca acepta del cliente la instancia donde se creará un sonido.
+- Limita el volumen y la velocidad de reproducción.
+- Limita la cantidad de solicitudes por jugador.
+- Aísla los errores para impedir que un chasis malformado detenga el monitor global.
+- Reemplaza los remotos vulnerables de forma inmediata cuando se insertan vehículos.
+- Revisa nuevamente los chasis incompletos hasta que aparezcan sus dependencias.
 
-## Supported protocol
+## Código utilizado para explotar la vulnerabilidad
 
-The patcher recognizes `AC6_FE_Sounds` remotes and supports the traditional actions:
+El código original fue publicado en:
+
+https://pastebin.com/5FUE10fZ
+
+La siguiente es una reproducción neutralizada del payload observado. Se utiliza un nombre inocuo, un identificador vacío y volumen cero para documentar el flujo sin reproducir contenido inapropiado:
+
+```lua
+local espacio = game:GetService("Workspace")
+
+for _, objeto in pairs(espacio:GetChildren()) do
+	local vehiculo = objeto:FindFirstChild("Veiculo")
+	if vehiculo then
+		local remoto = vehiculo:FindFirstChild("AC6_FE_Sounds")
+		if remoto then
+			remoto:FireServer(
+				"newSound",
+				"prueba_segura",
+				espacio,
+				"rbxassetid://0",
+				1,
+				0,
+				false
+			)
+			remoto:FireServer("playSound", "prueba_segura")
+		end
+	end
+end
+```
+
+La vulnerabilidad no depende del nombre del sonido. El problema es que el manejador original confía en el destino, el identificador y otras propiedades suministradas por el cliente.
+
+## Protocolo compatible
+
+El parcheador reconoce remotos llamados `AC6_FE_Sounds` y mantiene las acciones tradicionales:
 
 - `newSound`
 - `updateSound`
@@ -29,89 +62,89 @@ The patcher recognizes `AC6_FE_Sounds` remotes and supports the traditional acti
 - `stopSound`
 - `removeSound`
 
-Action names and remote names are matched without case sensitivity. Arbitrary sound names are rejected unless a corresponding server-owned `Sound` template exists.
+Los nombres de acciones y remotos se comparan sin distinguir mayúsculas de minúsculas. Un nombre de sonido arbitrario se rechaza si no existe una plantilla `Sound` correspondiente y controlada por el servidor.
 
-## Installation
+## Instalación
 
-1. Create a `Script` inside `ServerScriptService`.
-2. Name it `AC6AutoPatcher`.
-3. Copy the contents of `AC6AutoPatcher.server.lua` into the script.
-4. Keep only one copy of the patcher in the experience.
-5. Test every vehicle in a local server before publishing the experience.
+1. Crea un `Script` dentro de `ServerScriptService`.
+2. Nómbralo `ParcheadorAutomaticoAC6`.
+3. Copia el contenido de `ParcheadorAutomaticoAC6.server.lua` dentro del script.
+4. Conserva una sola copia del parcheador en la experiencia.
+5. Prueba todos los vehículos en un servidor local antes de publicar la experiencia.
 
-No per-vehicle handler replacement is required for recognized AC6 remotes.
+No es necesario reemplazar individualmente el manejador de cada vehículo cuando el remoto AC6 es reconocido.
 
-## Runtime states
+## Estados durante la ejecución
 
-Every replacement remote receives these attributes:
+Cada remoto reemplazado recibe estos atributos:
 
-- `ac6_patch_version`
-- `ac6_patch_state`
-- `ac6_patch_reason`
+- `ac6_version_parche`
+- `ac6_estado_parche`
+- `ac6_motivo_parche`
 
-Possible states include:
+Los estados posibles incluyen:
 
-- `secure_ready`: the chassis is protected and its audio dependencies are available.
-- `secure_degraded`: the chassis is protected and temporarily uses the driver seat as its sound emitter.
-- `secure_waiting`: the chassis is protected but is waiting for a compatible seat, template, or emitter.
+- `seguro_listo`: el chasis está protegido y sus dependencias de audio están disponibles.
+- `seguro_degradado`: el chasis está protegido y utiliza temporalmente el asiento del conductor como emisor.
+- `seguro_esperando`: el chasis está protegido, pero espera un asiento, una plantilla o un emisor compatible.
 
-If the initial scan does not find a recognized vulnerable remote, the server prints:
+Si el escaneo inicial no encuentra un remoto vulnerable reconocido, el servidor imprime:
 
 ```text
-AC6 AutoPatcher no encontro vulnerabilidades en el escaneo inicial
+Parcheador AC6 no encontro vulnerabilidades en el escaneo inicial
 ```
 
-The monitor remains active after that message and continues processing dynamically inserted vehicles.
+El monitor continúa activo después de ese mensaje y procesa los vehículos insertados dinámicamente.
 
-## Configuration
+## Configuración
 
-The configuration table at the beginning of the script controls:
+La tabla `configuracion`, ubicada al comienzo del script, controla:
 
-- Services monitored for vulnerable remotes.
-- Accepted remote names.
-- Accepted driver-seat names.
-- Preferred sound-emitter names.
-- Request limits.
-- Dependency retry interval.
-- Volume and playback-speed limits.
-- Driver-seat emitter fallback.
+- Los servicios supervisados.
+- Los nombres de remotos aceptados.
+- Los nombres de asientos del conductor aceptados.
+- Los nombres preferidos para emisores de sonido.
+- Los límites de solicitudes.
+- El intervalo de reintento de dependencias.
+- Los límites de volumen y velocidad.
+- El uso del asiento como emisor de respaldo.
 
-The default configuration monitors `Workspace`, `ReplicatedStorage`, `ServerStorage`, `StarterPack`, and `Players`.
+La configuración predeterminada supervisa `Workspace`, `ReplicatedStorage`, `ServerStorage`, `StarterPack` y `Players`.
 
-Remove services that cannot contain vehicles in your experience to reduce the monitoring scope.
+Puedes retirar los servicios que nunca contengan vehículos en tu experiencia para reducir el alcance del monitoreo.
 
-## Compatibility
+## Compatibilidad
 
-The project targets AC6 variants that expose an `AC6_FE_Sounds` `RemoteEvent` and contain server-owned sound templates.
+El proyecto está dirigido a variantes AC6 que exponen un `RemoteEvent` llamado `AC6_FE_Sounds` y contienen plantillas de sonido controladas por el servidor.
 
-Custom chassis may require configuration changes when they use:
+Un chasis personalizado puede requerir cambios en la configuración cuando utiliza:
 
-- A different remote name.
-- A different driver-seat name.
-- A completely different argument protocol.
-- Sound identifiers stored only inside custom modules.
-- A non-AC6 vehicle system.
+- Otro nombre para el remoto.
+- Otro nombre para el asiento del conductor.
+- Un protocolo de argumentos completamente diferente.
+- Identificadores almacenados únicamente dentro de módulos personalizados.
+- Un sistema vehicular distinto de AC6.
 
-If a recognized chassis is missing dependencies, the patcher fails closed: the vulnerable remote is neutralized, but engine audio may remain unavailable until the required server-owned objects appear.
+Cuando faltan dependencias, el parcheador falla de forma cerrada: neutraliza el remoto vulnerable, pero el audio del motor puede permanecer inactivo hasta que aparezcan los objetos requeridos.
 
-Audio ownership and experience permissions are separate from this vulnerability. The patcher cannot grant an experience permission to use an audio asset.
+La propiedad y los permisos de los audios son independientes de esta vulnerabilidad. El parcheador no puede conceder a una experiencia permiso para utilizar un recurso de audio.
 
-## Validation
+## Validación
 
-The source has been checked for Luau syntax and tested against simulated cases covering:
+La fuente fue verificada sintácticamente en Luau y sometida a pruebas simuladas que abarcaron:
 
-- The arbitrary sound creation payload.
-- Unauthorized players.
-- Client-controlled sound identifiers and parents.
-- Excessive volume.
-- Dynamic vehicle insertion.
-- Incomplete chassis.
-- Delayed dependencies.
-- Non-archivable sound templates.
-- Vehicles cloned from shared storage.
+- El payload de creación arbitraria de sonidos.
+- Jugadores no autorizados.
+- Identificadores y destinos controlados por el cliente.
+- Volumen excesivo.
+- Inserción dinámica de vehículos.
+- Chasis incompletos.
+- Dependencias tardías.
+- Plantillas no clonables.
+- Vehículos clonados desde almacenamiento compartido.
 
-Always perform a Roblox Studio local-server test with the exact vehicle models used by the destination experience.
+Realiza siempre una prueba de servidor local en Roblox Studio con los modelos exactos utilizados por la experiencia de destino.
 
-## License
+## Licencia
 
-This project is released under the MIT License.
+Este proyecto se distribuye bajo la licencia MIT.
