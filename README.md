@@ -79,7 +79,7 @@ Si tu chasis usa otro nombre de remoto, otro asiento, otro protocolo o guarda lo
 
 1. Creá un `Script` dentro de `ServerScriptService`.
 2. Ponele `ParcheadorAutomaticoAC6` o el nombre que más quieras.
-3. Copiá adentro el contenido de `ParcheadorAutomaticoAC6.server.lua`.
+3. Copiá adentro el contenido de `ParcheadorAutomaticoAC6.server.luau`.
 4. Asegurate de tener una sola copia.
 5. Probá los vehículos en un servidor local antes de publicar el juego.
 
