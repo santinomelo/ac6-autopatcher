@@ -1,4 +1,6 @@
-# Parcheador Automático (AutoPatcher) de A-Chassis Tune 6 (AC6) 
+# Parcheador Automático (AutoPatcher) de A-Chassis Tune 6 (AC6)
+
+[Español](README.md) · [English](README.en.md)
 
 ![Roblox](https://img.shields.io/badge/Roblox-Studio-00A2FF?logo=robloxstudio&logoColor=white)
 ![Luau](https://img.shields.io/badge/Luau-servidor-335FFF)
@@ -102,7 +104,8 @@ Cada remoto parcheado recibe estos atributos:
 - `ac6_estado_parche`
 - `ac6_motivo_parche`
 
-*Un exploiter que se limita a copiar y pegar scripts difícilmente podría identificar correctamente, dentro del `Workspace` de un juego en producción, el nombre de cada `RemoteEvent` modificado. Por lo general, este tipo de usuario solo ejecuta scripts prefabricados en su executor de confianza y no suele recurrir a herramientas como `Dex Explorer`, que permite inspeccionar desde una interfaz el contenido del juego disponible para el cliente, o `Remote Spy`, que intercepta y registra las comunicaciones mediante `RemoteEvent` y `RemoteFunction`, mostrando en tiempo real los datos y argumentos enviados entre el cliente y el servidor.*
+> [!NOTE]
+> Los nombres de los `RemoteEvent`, sus atributos y el tráfico accesible al cliente pueden ser inspeccionados. La seguridad de este parche no depende de mantenerlos ocultos: depende de que el servidor valide al conductor, el destino, el ID del audio, sus propiedades y la frecuencia de cada solicitud antes de ejecutar cualquier acción.
 
 Estados posibles:
 
